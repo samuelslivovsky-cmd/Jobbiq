@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { crawlDuePreferences } from "@jobbiq/crawler";
+import { matchUsersForPreferences } from "@jobbiq/matcher";
 
 // Crawling can take a while across sources; requires Fluid Compute (default on
 // new Vercel projects) for >60s on the Hobby plan.
@@ -14,5 +15,17 @@ export async function GET(request: NextRequest) {
 
   const results = await crawlDuePreferences({ maxResults: 100 });
   const fetched = results.reduce((sum, r) => sum + r.fetched, 0);
-  return NextResponse.json({ crawled: results.length, fetched, results });
+
+  const matchResults = await matchUsersForPreferences(
+    [...new Set(results.map((r) => r.preferenceId))],
+  );
+  const matched = matchResults.reduce((sum, r) => sum + r.scored, 0);
+
+  return NextResponse.json({
+    crawled: results.length,
+    fetched,
+    matched,
+    results,
+    matchResults,
+  });
 }

@@ -19,10 +19,10 @@ export default async function DashboardPage() {
     ]);
 
   const stats = [
-    { label: "Profile", value: profile ? "Ready" : "Missing CV" },
-    { label: "Search preferences", value: String(preferenceCount) },
-    { label: "New matches", value: String(matchCount) },
-    { label: "Applications", value: String(applicationCount) },
+    { label: "Profile", value: profile ? "Ready" : "Missing CV", href: "/profile" },
+    { label: "Search preferences", value: String(preferenceCount), href: "/preferences" },
+    { label: "New matches", value: String(matchCount), href: "/matches" },
+    { label: "Applications", value: String(applicationCount), href: "/matches?status=APPLIED" },
   ];
 
   return (
@@ -66,13 +66,14 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {stats.map((stat) => (
-          <div
+          <a
             key={stat.label}
-            className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm"
+            href={stat.href}
+            className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm hover:border-neutral-400"
           >
             <p className="text-sm text-neutral-500">{stat.label}</p>
             <p className="mt-1 text-xl font-semibold">{stat.value}</p>
-          </div>
+          </a>
         ))}
       </div>
 

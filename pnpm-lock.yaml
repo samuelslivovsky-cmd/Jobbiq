@@ -32,6 +32,9 @@ importers:
       '@jobbiq/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@jobbiq/matcher':
+        specifier: workspace:*
+        version: link:../../packages/matcher
       '@vercel/blob':
         specifier: ^2.7.0
         version: 2.7.0
@@ -155,6 +158,25 @@ importers:
       prisma:
         specifier: ^6.5.0
         version: 6.19.3(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  packages/matcher:
+    dependencies:
+      '@jobbiq/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@jobbiq/core':
+        specifier: workspace:*
+        version: link:../core
+      '@jobbiq/db':
+        specifier: workspace:*
+        version: link:../db
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.1
+        version: 22.20.1
       typescript:
         specifier: ^5.6.3
         version: 5.9.3
