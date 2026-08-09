@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma, type MatchStatus } from "@jobbiq/db";
 import { auth } from "@/auth";
 import { findMatchesAction, updateMatchStatusAction } from "./actions";
+import { applyToMatchAction } from "@/app/applications/actions";
 
 // AI scoring of candidate postings can take a while.
 export const maxDuration = 300;
@@ -174,6 +175,17 @@ export default async function MatchesPage({
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
+                    {(status === "NEW" || status === "SAVED") && (
+                      <form action={applyToMatchAction}>
+                        <input type="hidden" name="matchId" value={match.id} />
+                        <button
+                          type="submit"
+                          className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700"
+                        >
+                          Apply
+                        </button>
+                      </form>
+                    )}
                     {status !== "SAVED" && (
                       <StatusButton id={match.id} status="SAVED" backTo={status} label="Save" />
                     )}

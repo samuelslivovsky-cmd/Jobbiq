@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     { label: "Profile", value: profile ? "Ready" : "Missing CV", href: "/profile" },
     { label: "Search preferences", value: String(preferenceCount), href: "/preferences" },
     { label: "New matches", value: String(matchCount), href: "/matches" },
-    { label: "Applications", value: String(applicationCount), href: "/matches?status=APPLIED" },
+    { label: "Applications", value: String(applicationCount), href: "/applications" },
   ];
 
   return (
@@ -52,6 +52,18 @@ export default async function DashboardPage() {
             className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
           >
             Job feed
+          </a>
+          <a
+            href="/matches"
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+          >
+            Matches
+          </a>
+          <a
+            href="/applications"
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+          >
+            Applications
           </a>
         <form action={logoutAction}>
           <button
