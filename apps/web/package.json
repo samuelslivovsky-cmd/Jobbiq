@@ -9,14 +9,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@jobbiq/ai": "workspace:*",
     "@jobbiq/core": "workspace:*",
     "@jobbiq/crawler": "workspace:*",
     "@jobbiq/db": "workspace:*",
+    "@vercel/blob": "^2.7.0",
     "bcryptjs": "^3.0.2",
+    "mammoth": "^1.12.1",
     "next": "^15.2.0",
     "next-auth": "^5.0.0-beta.25",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "unpdf": "^1.8.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",

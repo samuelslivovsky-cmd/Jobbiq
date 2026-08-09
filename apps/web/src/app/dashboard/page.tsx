@@ -34,6 +34,13 @@ export default async function DashboardPage() {
             Signed in as {session.user.email}
           </p>
         </div>
+        <div className="flex items-center gap-3">
+          <a
+            href="/profile"
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+          >
+            Profile
+          </a>
         <form action={logoutAction}>
           <button
             type="submit"
@@ -42,6 +49,7 @@ export default async function DashboardPage() {
             Sign out
           </button>
         </form>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
