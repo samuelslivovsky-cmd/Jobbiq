@@ -20,6 +20,9 @@ importers:
       '@jobbiq/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@jobbiq/connectors':
+        specifier: workspace:*
+        version: link:../../packages/connectors
       '@jobbiq/core':
         specifier: workspace:*
         version: link:../../packages/core

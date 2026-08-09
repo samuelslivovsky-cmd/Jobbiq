@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@jobbiq/ai": "workspace:*",
+    "@jobbiq/connectors": "workspace:*",
     "@jobbiq/core": "workspace:*",
     "@jobbiq/crawler": "workspace:*",
     "@jobbiq/db": "workspace:*",

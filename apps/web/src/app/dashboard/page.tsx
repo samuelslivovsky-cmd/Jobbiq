@@ -41,6 +41,18 @@ export default async function DashboardPage() {
           >
             Profile
           </a>
+          <a
+            href="/preferences"
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+          >
+            Preferences
+          </a>
+          <a
+            href="/jobs"
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+          >
+            Job feed
+          </a>
         <form action={logoutAction}>
           <button
             type="submit"
