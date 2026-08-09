@@ -4,35 +4,49 @@ Job search & apply automation: aggregates job postings from multiple sources,
 matches them against a candidate profile extracted from your CV, and generates
 personalized application emails. See [PLAN.md](./PLAN.md) for the full roadmap.
 
+Deployed on **Vercel** — the Next.js app hosts the UI, the API route handlers,
+and the scheduled crawling (Vercel Cron). Database is Neon / Vercel Postgres
+(with pgvector), CV files go to Vercel Blob.
+
 ## Structure
 
 ```
 apps/
-  web/          Next.js dashboard (Auth.js credentials login)
-  api/          NestJS REST API
+  web/          Next.js app: UI + API routes + cron handlers (Vercel)
 packages/
   db/           Prisma schema + client (PostgreSQL + pgvector)
   core/         Domain types, zod schemas, dedup hashing
   connectors/   Job source adapters (Adzuna, Remotive, ...)
+  crawler/      Crawl orchestration used by the cron route
   ai/           Claude API wrappers (CV parsing, email generation)
-  workers/      BullMQ workers (crawling)
 ```
 
-## Getting started
+## Local development
 
 ```bash
 pnpm install
 cp .env.example .env          # fill in secrets
-docker compose up -d          # Postgres + Redis + MinIO
+docker compose up -d          # local Postgres (pgvector)
 pnpm db:migrate               # create DB schema
 pnpm build
-pnpm dev                      # web on :3000, api on :4000
+pnpm --filter @jobbiq/web dev # app on :3000
 ```
 
-## Environment
+Trigger a crawl manually:
 
-See `.env.example`. Required for full functionality:
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/crawl
+```
 
-- `DATABASE_URL`, `REDIS_URL`, `AUTH_SECRET`
-- `ANTHROPIC_API_KEY` — CV parsing + email generation
-- `ADZUNA_APP_ID` / `ADZUNA_APP_KEY` — Adzuna connector (free at developer.adzuna.com)
+## Deploying to Vercel
+
+1. Import the repo; set **Root Directory** to `apps/web` (install/build commands
+   come from `apps/web/vercel.json`, which builds workspace deps via Turborepo).
+2. Add a Neon / Vercel Postgres database, enable the `vector` extension, and set
+   `DATABASE_URL` (pooled connection string).
+3. Set env vars: `AUTH_SECRET`, `CRON_SECRET`, `ANTHROPIC_API_KEY`,
+   `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`.
+4. Run migrations against the production DB:
+   `DATABASE_URL=... pnpm --filter @jobbiq/db migrate:deploy`
+5. The hourly cron (`/api/cron/crawl`) is registered from `vercel.json`;
+   Vercel authenticates it with `CRON_SECRET` automatically.

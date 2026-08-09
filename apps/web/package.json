@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@jobbiq/core": "workspace:*",
+    "@jobbiq/crawler": "workspace:*",
     "@jobbiq/db": "workspace:*",
     "bcryptjs": "^3.0.2",
     "next": "^15.2.0",

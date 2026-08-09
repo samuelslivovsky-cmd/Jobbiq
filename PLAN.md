@@ -34,34 +34,46 @@ e-mail / motivačný list.
 
 ## 2. Technologický stack (odporúčanie)
 
+Aplikácia beží na **Verceli** — žiadne dlho bežiace procesy (workery, samostatný
+API server). Všetko hostuje Next.js aplikácia: UI, API route handlery aj
+naplánované joby cez Vercel Cron.
+
 | Vrstva | Voľba | Dôvod |
 |---|---|---|
-| Monorepo | pnpm workspaces + Turborepo | jeden jazyk (TypeScript) naprieč FE/BE/workers |
-| Frontend | Next.js (App Router) + Tailwind + shadcn/ui | rýchly vývoj dashboardu |
-| Backend API | NestJS (REST + OpenAPI) | modulárna architektúra, DI, validácia |
-| DB | PostgreSQL + Prisma | relačné dáta + `pgvector` na embeddingy |
-| Queue/scheduler | BullMQ + Redis | periodické crawly, retry, rate-limiting |
-| Scraping | Playwright + Cheerio | JS-heavy portály aj statické HTML |
-| AI | Claude API (`claude-sonnet-5` na parsing/generovanie, `claude-haiku-4-5` na lacnú klasifikáciu) | extrakcia CV, matching rerank, generovanie e-mailov |
+| Monorepo | pnpm workspaces + Turborepo | jeden jazyk (TypeScript) naprieč celým stackom |
+| Aplikácia | Next.js (App Router) + Tailwind, deploy na Vercel | UI + API routes + cron handlery v jednom deployi |
+| DB | Neon / Vercel Postgres + Prisma | serverless Postgres s `pgvector` na embeddingy |
+| Scheduler | Vercel Cron → `/api/cron/*` route handlery | periodické crawly bez vlastnej infraštruktúry |
+| Scraping | fetch + Cheerio (statické HTML); Playwright len mimo Vercelu | serverless limity — JS-heavy portály cez externý runner (neskoršia fáza) |
+| AI | Claude API (`claude-opus-5`, modely konfigurovateľné cez env) | extrakcia CV, matching rerank, generovanie e-mailov |
 | Embeddingy | Voyage AI alebo open-source (bge-m3) | podobnosť profil × inzerát |
 | E-mail | Gmail API / SMTP (nodemailer) cez OAuth používateľa | e-maily odchádzajú z adresy používateľa |
-| Storage | S3-kompatibilné (CV súbory) | |
-| Auth | Auth.js (e-mail + Google OAuth) | OAuth rovno poslúži aj na Gmail sending |
+| Storage | Vercel Blob (CV súbory) | natívne pre Vercel, jednoduchý SDK |
+| Auth | Auth.js (credentials + Google OAuth) | OAuth rovno poslúži aj na Gmail sending |
 
 ### Štruktúra monorepa
 ```
 jobbiq/
 ├── apps/
-│   ├── web/            # Next.js dashboard
-│   └── api/            # NestJS API
+│   └── web/            # Next.js: dashboard + API routes + cron handlery
 ├── packages/
 │   ├── db/             # Prisma schéma + klient
 │   ├── core/           # doménové typy, zdieľaná logika, scoring
 │   ├── connectors/     # adaptéry na job portály (plugin systém)
-│   ├── ai/             # wrappery na Claude API (CV parser, matcher, writer)
-│   └── workers/        # BullMQ procesory (crawl, match, apply)
-└── docker-compose.yml  # Postgres, Redis, MinIO pre lokálny vývoj
+│   ├── crawler/        # orchestrácia crawlov (volané z cron route)
+│   └── ai/             # wrappery na Claude API (CV parser, matcher, writer)
+└── docker-compose.yml  # Postgres pre lokálny vývoj
 ```
+
+### Vercel špecifiká
+- **Cron:** `vercel.json` registruje hodinový cron na `/api/cron/crawl`;
+  handler crawluje len preferencie, ktorým podľa `frequency` a `lastCrawledAt`
+  vypršal interval. Chránené `CRON_SECRET`.
+- **Limity funkcií:** crawl route má `maxDuration = 300`; ťažké scrapy
+  (Playwright) sa na Verceli spúšťať nebudú — pre fázu 5+ pôjdu cez externý
+  runner (napr. malý VPS/Fly.io worker alebo browserless API).
+- **DB pripojenia:** používať pooled connection string (Neon pooler), Prisma
+  singleton v serverless funkciách.
 
 ---
 
@@ -102,7 +114,7 @@ s viacerými zdrojovými URL.
 ## 4. Kľúčové moduly
 
 ### 4.1 CV Parsing (`packages/ai`)
-1. Upload → S3, extrakcia textu (pdf-parse / mammoth; fallback OCR pre skenované PDF).
+1. Upload → Vercel Blob, extrakcia textu (pdf-parse / mammoth; fallback OCR pre skenované PDF).
 2. Claude API so structured output (tool use / JSON schema) → `CandidateProfile`.
 3. Používateľ profil skontroluje a doedituje v UI (parsing nie je nikdy 100 %).
 4. Z profilu sa vygeneruje embedding pre matching.
@@ -131,7 +143,7 @@ Poradie implementácie (od najjednoduchších po rizikové):
 | 3 | Indeed, LinkedIn | ⚠️ | ToS scraping zakazuje — len deep-linky na inzerát, nie auto-apply |
 
 Zásady: rate-limit + jitter na doménu, cache, `robots.txt` respect, user-agent
-identifikácia, retry s backoffom. Konektory bežia ako BullMQ joby podľa `frequency`
+identifikácia, retry s backoffom. Konektory sa spúšťajú z Vercel Cron route podľa `frequency`
 v `SearchPreference`.
 
 ### 4.3 Matching engine (`packages/core` + `ai`)
@@ -157,8 +169,9 @@ Dvojstupňový, aby bol lacný:
 - **Limity:** denný strop odoslaní, cooldown na firmu, dedup (na jeden inzerát max 1×).
 
 ### 4.6 Scheduler + notifikácie
-- BullMQ repeatable jobs: `crawl:{sourceKey}` podľa frekvencie preferencie,
-  `match:{userId}` po každom crawle, `digest:{userId}` (denný e-mail s novými zhodami).
+- Vercel Cron: hodinový tick na `/api/cron/crawl` (crawluje due preferencie a
+  následne spustí matching pre dotknutých používateľov); denný `/api/cron/digest`
+  (e-mail s novými zhodami).
 - Notifikácie: e-mail digest, neskôr push/Telegram.
 
 ### 4.7 Frontend (apps/web)

@@ -136,6 +136,7 @@ model SearchPreference {
   excludeCompanies String[]
   frequency        CrawlFrequency @default(DAILY)
   active           Boolean        @default(true)
+  lastCrawledAt    DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
