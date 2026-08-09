@@ -1,0 +1,282 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+// ---------- Auth (Auth.js compatible) ----------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts          Account[]
+  sessions          Session[]
+  cvDocuments       CvDocument[]
+  candidateProfile  CandidateProfile?
+  searchPreferences SearchPreference[]
+  matches           Match[]
+  applications      Application[]
+  emailTemplates    EmailTemplate[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------- CV & profile ----------
+
+model CvDocument {
+  id        String    @id @default(cuid())
+  userId    String
+  fileUrl   String
+  fileName  String
+  mimeType  String
+  rawText   String?
+  parsedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CandidateProfile {
+  id             String                       @id @default(cuid())
+  userId         String                       @unique
+  fullName       String
+  headline       String?
+  summary        String?
+  email          String?
+  phone          String?
+  location       String?
+  skills         Json                         @default("[]")
+  experience     Json                         @default("[]")
+  education      Json                         @default("[]")
+  languages      Json                         @default("[]")
+  certifications Json                         @default("[]")
+  links          Json                         @default("[]")
+  editedByUser   Boolean                      @default(false)
+  embedding      Unsupported("vector(1024)")?
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------- Search preferences & sources ----------
+
+enum RemoteType {
+  ON_SITE
+  HYBRID
+  REMOTE
+  ANY
+}
+
+enum CrawlFrequency {
+  HOURLY
+  EVERY_6_HOURS
+  DAILY
+  WEEKLY
+}
+
+model SearchPreference {
+  id               String         @id @default(cuid())
+  userId           String
+  name             String
+  keywords         String[]
+  locations        String[]
+  remoteType       RemoteType     @default(ANY)
+  contractTypes    String[]
+  seniority        String[]
+  salaryMin        Int?
+  currency         String?
+  sources          String[]
+  excludeCompanies String[]
+  frequency        CrawlFrequency @default(DAILY)
+  active           Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matches Match[]
+}
+
+enum SourceType {
+  API
+  SCRAPE
+}
+
+model JobSource {
+  id      String     @id @default(cuid())
+  key     String     @unique
+  name    String
+  type    SourceType
+  baseUrl String
+  enabled Boolean    @default(true)
+  config  Json       @default("{}")
+
+  postings JobPosting[]
+}
+
+// ---------- Job postings ----------
+
+model JobPosting {
+  id          String                       @id @default(cuid())
+  sourceId    String
+  externalId  String
+  url         String
+  title       String
+  company     String
+  location    String?
+  remoteType  RemoteType?
+  salaryText  String?
+  description String
+  applyEmail  String?
+  applyUrl    String?
+  postedAt    DateTime?
+  fetchedAt   DateTime                     @default(now())
+  contentHash String
+  embedding   Unsupported("vector(1024)")?
+
+  source       JobSource     @relation(fields: [sourceId], references: [id])
+  matches      Match[]
+  applications Application[]
+
+  @@unique([sourceId, externalId])
+  @@index([contentHash])
+  @@index([fetchedAt])
+}
+
+// ---------- Matching ----------
+
+enum MatchStatus {
+  NEW
+  SAVED
+  DISMISSED
+  APPLIED
+}
+
+model Match {
+  id           String      @id @default(cuid())
+  userId       String
+  jobPostingId String
+  preferenceId String
+  score        Int
+  reasoning    Json        @default("{}")
+  status       MatchStatus @default(NEW)
+  createdAt    DateTime    @default(now())
+
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobPosting JobPosting       @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  preference SearchPreference @relation(fields: [preferenceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobPostingId])
+  @@index([userId, status, score])
+}
+
+// ---------- Applications & emails ----------
+
+enum ApplicationMode {
+  MANUAL
+  SEMI_AUTO
+}
+
+enum ApplicationStatus {
+  DRAFT
+  APPROVED
+  SENT
+  REPLIED
+  INTERVIEW
+  REJECTED
+  OFFER
+}
+
+enum ApplicationChannel {
+  EMAIL
+  PORTAL_FORM
+}
+
+model Application {
+  id           String             @id @default(cuid())
+  userId       String
+  jobPostingId String
+  mode         ApplicationMode    @default(MANUAL)
+  status       ApplicationStatus  @default(DRAFT)
+  channel      ApplicationChannel @default(EMAIL)
+  sentAt       DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobPosting JobPosting       @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  emails     GeneratedEmail[]
+
+  @@unique([userId, jobPostingId])
+}
+
+model GeneratedEmail {
+  id            String   @id @default(cuid())
+  applicationId String
+  subject       String
+  body          String
+  language      String
+  modelUsed     String
+  promptVersion String
+  userEdited    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model EmailTemplate {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  tone         String   @default("professional")
+  instructions String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
