@@ -18,7 +18,7 @@ packages/
   core/         Domain types, zod schemas, dedup hashing
   connectors/   Job source adapters (Adzuna, Remotive, ...)
   crawler/      Crawl orchestration used by the cron route
-  ai/           Claude API wrappers (CV parsing, email generation)
+  ai/           OpenAI API wrappers (CV parsing, matching, email generation)
 ```
 
 ## Local development
@@ -44,9 +44,9 @@ curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/crawl
    come from `apps/web/vercel.json`, which builds workspace deps via Turborepo).
 2. Add a Neon / Vercel Postgres database, enable the `vector` extension, and set
    `DATABASE_URL` (pooled connection string).
-3. Set env vars: `AUTH_SECRET`, `CRON_SECRET`, `ANTHROPIC_API_KEY`,
+3. Set env vars: `AUTH_SECRET`, `CRON_SECRET`, `OPENAI_API_KEY`,
    `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`.
 4. Run migrations against the production DB:
    `DATABASE_URL=... pnpm --filter @jobbiq/db migrate:deploy`
-5. The hourly cron (`/api/cron/crawl`) is registered from `vercel.json`;
+5. The daily cron (`/api/cron/crawl`) is registered from `vercel.json`;
    Vercel authenticates it with `CRON_SECRET` automatically.

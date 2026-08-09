@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { CandidateProfileData } from "@jobbiq/core";
-import { getAnthropicClient, MODELS } from "./client";
+import { MODELS } from "./client";
+import { parseStructured } from "./structured";
 
-export const EMAIL_PROMPT_VERSION = "email-writer-v1";
+export const EMAIL_PROMPT_VERSION = "email-writer-v2-openai";
 
 export const generatedEmailSchema = z.object({
   subject: z.string(),
@@ -40,10 +40,9 @@ export async function generateApplicationEmail(input: {
   job: EmailJobContext;
   template?: EmailTemplateOptions;
 }): Promise<GeneratedEmailData> {
-  const client = getAnthropicClient();
   const { profile, job, template } = input;
 
-  const userContent = [
+  const user = [
     `## Job posting`,
     `Title: ${job.title}`,
     `Company: ${job.company}`,
@@ -62,21 +61,11 @@ export async function generateApplicationEmail(input: {
     .filter((line): line is string => line !== null)
     .join("\n");
 
-  const response = await client.messages.parse({
+  return parseStructured({
     model: MODELS.emailWriter,
-    max_tokens: 16000,
+    schema: generatedEmailSchema,
+    schemaName: "application_email",
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userContent }],
-    output_config: {
-      format: zodOutputFormat(generatedEmailSchema),
-    },
+    user,
   });
-
-  if (response.stop_reason === "refusal") {
-    throw new Error("Email generation was refused by the model");
-  }
-  if (!response.parsed_output) {
-    throw new Error("Email generation returned no structured output");
-  }
-  return response.parsed_output;
 }

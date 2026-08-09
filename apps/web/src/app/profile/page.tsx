@@ -5,7 +5,7 @@ import type { EducationItem, ExperienceItem } from "@jobbiq/core";
 import { auth } from "@/auth";
 import { uploadCvAction, saveProfileAction } from "./actions";
 
-// CV parsing calls the Claude API and can take a while.
+// CV parsing calls the OpenAI API and can take a while.
 export const maxDuration = 300;
 
 const MESSAGES: Record<string, { kind: "ok" | "err"; text: string }> = {
@@ -18,7 +18,7 @@ const MESSAGES: Record<string, { kind: "ok" | "err"; text: string }> = {
   noname: { kind: "err", text: "Full name is required." },
   parse: {
     kind: "err",
-    text: "The CV was uploaded but AI parsing failed. Check that ANTHROPIC_API_KEY is configured, then upload again.",
+    text: "The CV was uploaded but AI parsing failed. Check that OPENAI_API_KEY is configured, then upload again.",
   },
 };
 

@@ -1,8 +1,8 @@
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { candidateProfileDataSchema, type CandidateProfileData } from "@jobbiq/core";
-import { getAnthropicClient, MODELS } from "./client";
+import { MODELS } from "./client";
+import { parseStructured } from "./structured";
 
-export const CV_PARSER_PROMPT_VERSION = "cv-parser-v1";
+export const CV_PARSER_PROMPT_VERSION = "cv-parser-v2-openai";
 
 const SYSTEM_PROMPT = `You extract structured candidate profiles from raw CV/resume text.
 
@@ -14,28 +14,11 @@ Rules:
 - Preserve the original language of free-text fields like the summary.`;
 
 export async function parseCvText(rawText: string): Promise<CandidateProfileData> {
-  const client = getAnthropicClient();
-
-  const response = await client.messages.parse({
+  return parseStructured({
     model: MODELS.cvParser,
-    max_tokens: 16000,
+    schema: candidateProfileDataSchema,
+    schemaName: "candidate_profile",
     system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: `Extract the candidate profile from this CV:\n\n${rawText}`,
-      },
-    ],
-    output_config: {
-      format: zodOutputFormat(candidateProfileDataSchema),
-    },
+    user: `Extract the candidate profile from this CV:\n\n${rawText}`,
   });
-
-  if (response.stop_reason === "refusal") {
-    throw new Error("CV parsing was refused by the model");
-  }
-  if (!response.parsed_output) {
-    throw new Error("CV parsing returned no structured output");
-  }
-  return response.parsed_output;
 }

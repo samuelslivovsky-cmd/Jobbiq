@@ -1,4 +1,4 @@
-export { getAnthropicClient, MODELS } from "./client";
+export { getOpenAIClient, MODELS } from "./client";
 export { parseCvText, CV_PARSER_PROMPT_VERSION } from "./cvParser";
 export {
   scoreJobMatch,

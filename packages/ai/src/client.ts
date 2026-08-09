@@ -1,21 +1,20 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-let client: Anthropic | undefined;
+let client: OpenAI | undefined;
 
-export function getAnthropicClient(): Anthropic {
+export function getOpenAIClient(): OpenAI {
   if (!client) {
-    client = new Anthropic();
+    client = new OpenAI(); // reads OPENAI_API_KEY from the environment
   }
   return client;
 }
 
 /**
- * Models are env-configurable; default to claude-opus-5 for both flows.
+ * Models are env-configurable; gpt-5-mini is a good cost/quality default for
+ * a hobby deployment. Bump individual flows to gpt-5 via env if needed.
  */
 export const MODELS = {
-  cvParser: process.env.AI_MODEL_CV_PARSER ?? "claude-opus-5",
-  emailWriter: process.env.AI_MODEL_EMAIL_WRITER ?? "claude-opus-5",
-  // Runs once per candidate posting — set AI_MODEL_MATCHER to a cheaper
-  // model (e.g. claude-haiku-4-5) if scoring volume gets expensive.
-  matcher: process.env.AI_MODEL_MATCHER ?? "claude-opus-5",
+  cvParser: process.env.AI_MODEL_CV_PARSER ?? "gpt-5-mini",
+  emailWriter: process.env.AI_MODEL_EMAIL_WRITER ?? "gpt-5-mini",
+  matcher: process.env.AI_MODEL_MATCHER ?? "gpt-5-mini",
 } as const;

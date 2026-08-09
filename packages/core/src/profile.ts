@@ -6,7 +6,7 @@ export const experienceItemSchema = z.object({
   startDate: z.string().nullable().describe("YYYY-MM or YYYY"),
   endDate: z.string().nullable().describe("YYYY-MM, YYYY or null if current"),
   description: z.string().nullable(),
-  technologies: z.array(z.string()).default([]),
+  technologies: z.array(z.string()),
 });
 
 export const educationItemSchema = z.object({
@@ -34,12 +34,12 @@ export const candidateProfileDataSchema = z.object({
   email: z.string().nullable(),
   phone: z.string().nullable(),
   location: z.string().nullable(),
-  skills: z.array(z.string()).default([]),
-  experience: z.array(experienceItemSchema).default([]),
-  education: z.array(educationItemSchema).default([]),
-  languages: z.array(languageItemSchema).default([]),
-  certifications: z.array(z.string()).default([]),
-  links: z.array(linkItemSchema).default([]),
+  skills: z.array(z.string()),
+  experience: z.array(experienceItemSchema),
+  education: z.array(educationItemSchema),
+  languages: z.array(languageItemSchema),
+  certifications: z.array(z.string()),
+  links: z.array(linkItemSchema),
 });
 
 export type CandidateProfileData = z.infer<typeof candidateProfileDataSchema>;

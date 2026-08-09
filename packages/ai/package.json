@@ -9,8 +9,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.116.0",
     "@jobbiq/core": "workspace:*",
+    "openai": "^7.4.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {

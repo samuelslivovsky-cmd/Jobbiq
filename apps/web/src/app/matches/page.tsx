@@ -201,7 +201,7 @@ export default async function MatchesPage({
                 {reasoning.scoredBy === "lexical" ? (
                   <p className="mt-3 rounded-md bg-amber-50 p-2 text-xs text-amber-800">
                     Keyword-based estimate — AI scoring was unavailable. Re-run
-                    “Find matches now” with ANTHROPIC_API_KEY configured for a
+                    “Find matches now” with OPENAI_API_KEY configured for a
                     full assessment.
                   </p>
                 ) : (

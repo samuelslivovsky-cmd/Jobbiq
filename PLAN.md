@@ -45,7 +45,7 @@ naplánované joby cez Vercel Cron.
 | DB | Neon / Vercel Postgres + Prisma | serverless Postgres s `pgvector` na embeddingy |
 | Scheduler | Vercel Cron → `/api/cron/*` route handlery | periodické crawly bez vlastnej infraštruktúry |
 | Scraping | fetch + Cheerio (statické HTML); Playwright len mimo Vercelu | serverless limity — JS-heavy portály cez externý runner (neskoršia fáza) |
-| AI | Claude API (`claude-opus-5`, modely konfigurovateľné cez env) | extrakcia CV, matching rerank, generovanie e-mailov |
+| AI | OpenAI API (`gpt-5-mini`, modely konfigurovateľné cez env) | extrakcia CV, matching rerank, generovanie e-mailov |
 | Embeddingy | Voyage AI alebo open-source (bge-m3) | podobnosť profil × inzerát |
 | E-mail | Gmail API / SMTP (nodemailer) cez OAuth používateľa | e-maily odchádzajú z adresy používateľa |
 | Storage | Vercel Blob (CV súbory) | natívne pre Vercel, jednoduchý SDK |
@@ -61,12 +61,12 @@ jobbiq/
 │   ├── core/           # doménové typy, zdieľaná logika, scoring
 │   ├── connectors/     # adaptéry na job portály (plugin systém)
 │   ├── crawler/        # orchestrácia crawlov (volané z cron route)
-│   └── ai/             # wrappery na Claude API (CV parser, matcher, writer)
+│   └── ai/             # wrappery na OpenAI API (CV parser, matcher, writer)
 └── docker-compose.yml  # Postgres pre lokálny vývoj
 ```
 
 ### Vercel špecifiká
-- **Cron:** `vercel.json` registruje hodinový cron na `/api/cron/crawl`;
+- **Cron:** `vercel.json` registruje denný cron na `/api/cron/crawl` (Vercel Hobby povoľuje len denné crony);
   handler crawluje len preferencie, ktorým podľa `frequency` a `lastCrawledAt`
   vypršal interval. Chránené `CRON_SECRET`.
 - **Limity funkcií:** crawl route má `maxDuration = 300`; ťažké scrapy
@@ -115,7 +115,7 @@ s viacerými zdrojovými URL.
 
 ### 4.1 CV Parsing (`packages/ai`)
 1. Upload → Vercel Blob, extrakcia textu (pdf-parse / mammoth; fallback OCR pre skenované PDF).
-2. Claude API so structured output (tool use / JSON schema) → `CandidateProfile`.
+2. OpenAI API so structured output (JSON schema) → `CandidateProfile`.
 3. Používateľ profil skontroluje a doedituje v UI (parsing nie je nikdy 100 %).
 4. Z profilu sa vygeneruje embedding pre matching.
 
@@ -150,7 +150,7 @@ v `SearchPreference`.
 Dvojstupňový, aby bol lacný:
 1. **Filter + embedding similarity:** tvrdé filtre (lokalita, remote, úväzok, blacklist
    firiem) → kosínusová podobnosť embeddingov (pgvector) → top N kandidátov.
-2. **LLM rerank:** Claude (haiku) dostane profil + inzerát → skóre 0–100 +
+2. **LLM rerank:** LLM (gpt-5-mini) dostane profil + inzerát → skóre 0–100 +
    `{ pros, cons, missingSkills }`. Ukladá sa do `Match.reasoning` a zobrazuje v UI.
 
 ### 4.4 Generovanie e-mailov (`packages/ai`)
@@ -169,7 +169,7 @@ Dvojstupňový, aby bol lacný:
 - **Limity:** denný strop odoslaní, cooldown na firmu, dedup (na jeden inzerát max 1×).
 
 ### 4.6 Scheduler + notifikácie
-- Vercel Cron: hodinový tick na `/api/cron/crawl` (crawluje due preferencie a
+- Vercel Cron: denný tick na `/api/cron/crawl` (crawluje due preferencie a
   následne spustí matching pre dotknutých používateľov); denný `/api/cron/digest`
   (e-mail s novými zhodami).
 - Notifikácie: e-mail digest, neskôr push/Telegram.
@@ -188,7 +188,7 @@ Dvojstupňový, aby bol lacný:
 | Fáza | Obsah | Výstup |
 |---|---|---|
 | **0. Skeleton** (1 t.) | monorepo, docker-compose, Prisma schéma, auth, CI | prihlásenie + prázdny dashboard |
-| **1. CV → profil** (1–2 t.) | upload, text extrakcia, Claude parsing, edit UI | štruktúrovaný profil z CV |
+| **1. CV → profil** (1–2 t.) | upload, text extrakcia, AI parsing, edit UI | štruktúrovaný profil z CV |
 | **2. Zdroje + feed** (2 t.) | connector rozhranie, Adzuna + Jooble + Remotive, normalizácia, dedup, preferencie, scheduler | feed reálnych inzerátov podľa preferencií |
 | **3. Matching** (1 t.) | embeddingy, filter + rerank, skóre v UI | zoradený feed s odôvodnením |
 | **4. Aplikovanie** (2 t.) | generovanie e-mailov, review queue, Gmail OAuth sending, tracking stavov | end-to-end aplikácia na inzerát ✅ MVP |

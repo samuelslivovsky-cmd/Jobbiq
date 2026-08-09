@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { CandidateProfileData } from "@jobbiq/core";
-import { getAnthropicClient, MODELS } from "./client";
+import { MODELS } from "./client";
+import { parseStructured } from "./structured";
 
-export const MATCHER_PROMPT_VERSION = "matcher-v1";
+export const MATCHER_PROMPT_VERSION = "matcher-v2-openai";
 
 export const matchScoreSchema = z.object({
   score: z
@@ -40,7 +40,6 @@ export async function scoreJobMatch(input: {
   profile: CandidateProfileData;
   job: MatchJobInput;
 }): Promise<MatchScoreData> {
-  const client = getAnthropicClient();
   const { profile, job } = input;
 
   const description =
@@ -48,36 +47,26 @@ export async function scoreJobMatch(input: {
       ? `${job.description.slice(0, 8000)}…`
       : job.description;
 
-  const response = await client.messages.parse({
-    model: MODELS.matcher,
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: [
-          `## Job posting`,
-          `Title: ${job.title}`,
-          `Company: ${job.company}`,
-          job.location ? `Location: ${job.location}` : null,
-          `Description:\n${description}`,
-          ``,
-          `## Candidate profile`,
-          JSON.stringify(profile, null, 2),
-          ``,
-          `Evaluate the fit.`,
-        ]
-          .filter((line): line is string => line !== null)
-          .join("\n"),
-      },
-    ],
-    output_config: {
-      format: zodOutputFormat(matchScoreSchema),
-    },
-  });
+  const user = [
+    `## Job posting`,
+    `Title: ${job.title}`,
+    `Company: ${job.company}`,
+    job.location ? `Location: ${job.location}` : null,
+    `Description:\n${description}`,
+    ``,
+    `## Candidate profile`,
+    JSON.stringify(profile, null, 2),
+    ``,
+    `Evaluate the fit.`,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
 
-  if (response.stop_reason === "refusal" || !response.parsed_output) {
-    throw new Error("Match scoring returned no structured output");
-  }
-  return response.parsed_output;
+  return parseStructured({
+    model: MODELS.matcher,
+    schema: matchScoreSchema,
+    schemaName: "match_score",
+    system: SYSTEM_PROMPT,
+    user,
+  });
 }

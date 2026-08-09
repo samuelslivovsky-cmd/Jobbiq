@@ -10,7 +10,7 @@ import {
   updateApplicationStatusAction,
 } from "./actions";
 
-// Email generation calls the Claude API.
+// Email generation calls the OpenAI API.
 export const maxDuration = 300;
 
 const TABS: { key: ApplicationStatus; label: string }[] = [
@@ -36,7 +36,7 @@ const MESSAGES: Record<string, { kind: "ok" | "err"; text: string }> = {
   generated: { kind: "ok", text: "Email generated — review it below." },
   generate: {
     kind: "err",
-    text: "Email generation failed (is ANTHROPIC_API_KEY configured?). You can write the email manually below or hit Regenerate.",
+    text: "Email generation failed (is OPENAI_API_KEY configured?). You can write the email manually below or hit Regenerate.",
   },
   emptymail: { kind: "err", text: "Subject and body are required." },
   badrecipient: { kind: "err", text: "Enter a valid recipient email address." },
