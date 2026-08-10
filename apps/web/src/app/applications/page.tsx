@@ -4,6 +4,7 @@ import { prisma, type ApplicationStatus } from "@jobbiq/db";
 import { auth } from "@/auth";
 import { AppNav } from "@/components/AppNav";
 import { SubmitButton } from "@/components/SubmitButton";
+import { TabLink } from "@/components/TabLink";
 import { isSmtpConfigured } from "@/lib/mailer";
 import {
   regenerateEmailAction,
@@ -116,7 +117,7 @@ export default async function ApplicationsPage({
 
       <div className="mb-6 flex gap-1 overflow-x-auto rounded-lg bg-neutral-100 p-1">
         {TABS.map((t) => (
-          <Link
+          <TabLink
             key={t.key}
             href={`/applications?tab=${t.key}`}
             className={`flex-1 whitespace-nowrap rounded-md px-3 py-1.5 text-center text-sm ${
@@ -126,7 +127,7 @@ export default async function ApplicationsPage({
             }`}
           >
             {t.label}
-          </Link>
+          </TabLink>
         ))}
       </div>
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { logoutAction } from "@/app/actions";
+import { TabLink } from "@/components/TabLink";
 
 const LINKS = [
   { href: "/dashboard", label: "Dashboard", key: "dashboard" },
@@ -32,7 +33,7 @@ export function AppNav({ current }: { current: string }) {
       <nav className="mx-auto max-w-4xl overflow-x-auto px-3 md:px-7 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex gap-1 py-2">
           {LINKS.map((link) => (
-            <Link
+            <TabLink
               key={link.key}
               href={link.href}
               className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
@@ -42,7 +43,7 @@ export function AppNav({ current }: { current: string }) {
               }`}
             >
               {link.label}
-            </Link>
+            </TabLink>
           ))}
         </div>
       </nav>

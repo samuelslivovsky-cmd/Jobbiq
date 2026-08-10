@@ -6,6 +6,7 @@ import { findMatchesAction, updateMatchStatusAction } from "./actions";
 import { applyToMatchAction } from "@/app/applications/actions";
 import { AppNav } from "@/components/AppNav";
 import { SubmitButton } from "@/components/SubmitButton";
+import { TabLink } from "@/components/TabLink";
 
 // AI scoring of candidate postings can take a while.
 export const maxDuration = 300;
@@ -104,7 +105,7 @@ export default async function MatchesPage({
 
       <div className="mb-6 flex gap-1 rounded-lg bg-neutral-100 p-1">
         {TABS.map((tab) => (
-          <Link
+          <TabLink
             key={tab.key}
             href={`/matches?status=${tab.key}`}
             className={`flex-1 rounded-md px-3 py-1.5 text-center text-sm ${
@@ -114,7 +115,7 @@ export default async function MatchesPage({
             }`}
           >
             {tab.label}
-          </Link>
+          </TabLink>
         ))}
       </div>
 

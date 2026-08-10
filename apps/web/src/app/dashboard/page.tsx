@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@jobbiq/db";
 import { AppNav } from "@/components/AppNav";
+import { TabLink } from "@/components/TabLink";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -46,23 +47,27 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           {stats.map((stat) => (
-            <a
+            <TabLink
               key={stat.label}
               href={stat.href}
-              className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm transition-colors hover:border-emerald-600/50"
+              block
+              className="block rounded-xl border border-stone-200 bg-white p-4 shadow-sm transition-colors hover:border-emerald-600/50"
             >
               <p className="text-xs text-stone-500 md:text-sm">{stat.label}</p>
               <p className="mt-1 text-lg font-semibold md:text-xl">{stat.value}</p>
-            </a>
+            </TabLink>
           ))}
         </div>
 
-        <a
+        <TabLink
           href={nextStep.href}
+          block
           className="mt-6 block rounded-xl border border-emerald-600/30 bg-emerald-50 p-4 text-sm text-emerald-900 hover:border-emerald-600/60"
         >
-          <span className="font-semibold">Next step:</span> {nextStep.text}
-        </a>
+          <span>
+            <span className="font-semibold">Next step:</span> {nextStep.text}
+          </span>
+        </TabLink>
       </main>
     </>
   );
