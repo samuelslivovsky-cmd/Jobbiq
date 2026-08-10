@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from "fs/promises";
+import os from "os";
 import path from "path";
 
 /**
@@ -6,7 +7,12 @@ import path from "path";
  *
  * On Vercel this uses Vercel Blob (BLOB_READ_WRITE_TOKEN is injected when a
  * Blob store is attached to the project). Blob URLs are public but contain an
- * unguessable random suffix. Locally, files land in .uploads/ (gitignored).
+ * unguessable random suffix.
+ *
+ * Without a Blob store: locally files land in .uploads/ (gitignored); on
+ * Vercel the filesystem is read-only except /tmp, so the file is written
+ * there — it does NOT survive between invocations (parsing works, but email
+ * attachments need the Blob store).
  */
 export async function storeCvFile(
   userId: string,
@@ -26,7 +32,10 @@ export async function storeCvFile(
     return blob.url;
   }
 
-  const dir = path.join(process.cwd(), ".uploads", userId);
+  const baseDir = process.env.VERCEL
+    ? path.join(os.tmpdir(), "jobbiq-uploads")
+    : path.join(process.cwd(), ".uploads");
+  const dir = path.join(baseDir, userId);
   await mkdir(dir, { recursive: true });
   const filePath = path.join(dir, `${Date.now()}-${safeName}`);
   await writeFile(filePath, buffer);
