@@ -24,12 +24,24 @@ export async function storeCvFile(
 
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const { put } = await import("@vercel/blob");
-    const blob = await put(`cv/${userId}/${safeName}`, buffer, {
-      access: "public",
-      addRandomSuffix: true,
-      contentType,
-    });
-    return blob.url;
+    const pathname = `cv/${userId}/${safeName}`;
+    // CVs are personal data — prefer a private store; fall back to public
+    // when the attached store doesn't support private access.
+    try {
+      const blob = await put(pathname, buffer, {
+        access: "private",
+        addRandomSuffix: true,
+        contentType,
+      });
+      return blob.url;
+    } catch {
+      const blob = await put(pathname, buffer, {
+        access: "public",
+        addRandomSuffix: true,
+        contentType,
+      });
+      return blob.url;
+    }
   }
 
   const baseDir = process.env.VERCEL
