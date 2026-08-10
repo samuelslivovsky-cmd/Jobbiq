@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "cd ../.. && pnpm turbo run build --filter=@jobbiq/web",
+  "buildCommand": "cd ../.. && DATABASE_URL=${DIRECT_DATABASE_URL:-$DATABASE_URL} pnpm --filter @jobbiq/db migrate:deploy && pnpm turbo run build --filter=@jobbiq/web",
   "crons": [
     {
       "path": "/api/cron/crawl",
