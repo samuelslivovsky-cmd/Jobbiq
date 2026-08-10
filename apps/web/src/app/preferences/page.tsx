@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma, type SearchPreference } from "@jobbiq/db";
 import { connectorRegistry } from "@jobbiq/connectors";
 import { auth } from "@/auth";
+import { AppNav } from "@/components/AppNav";
 import {
   savePreferenceAction,
   deletePreferenceAction,
@@ -54,13 +54,10 @@ export default async function PreferencesPage({
     };
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Search preferences</h1>
-        <Link href="/dashboard" className="text-sm text-neutral-500 underline">
-          Back to dashboard
-        </Link>
-      </div>
+    <>
+      <AppNav current="preferences" />
+    <main className="mx-auto max-w-3xl p-4 md:p-8">
+      <h1 className="mb-6 text-2xl font-semibold">Search preferences</h1>
 
       {message && (
         <p
@@ -79,7 +76,7 @@ export default async function PreferencesPage({
           key={preference.id}
           className="mb-6 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm"
         >
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-medium">
               {preference.name}{" "}
               {!preference.active && (
@@ -88,7 +85,7 @@ export default async function PreferencesPage({
                 </span>
               )}
             </h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <form action={runCrawlNowAction}>
                 <input type="hidden" name="id" value={preference.id} />
                 <button
@@ -129,6 +126,7 @@ export default async function PreferencesPage({
         />
       </section>
     </main>
+    </>
   );
 }
 
@@ -239,7 +237,7 @@ function PreferenceForm({
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -250,7 +248,7 @@ function PreferenceForm({
         </label>
         <button
           type="submit"
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+          className="w-full rounded-md bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-700 sm:w-auto"
         >
           {preference ? "Save changes" : "Create preference"}
         </button>

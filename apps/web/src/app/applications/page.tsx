@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma, type ApplicationStatus } from "@jobbiq/db";
 import { auth } from "@/auth";
+import { AppNav } from "@/components/AppNav";
 import { isSmtpConfigured } from "@/lib/mailer";
 import {
   regenerateEmailAction,
@@ -88,13 +89,10 @@ export default async function ApplicationsPage({
   const smtpReady = isSmtpConfigured();
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Applications</h1>
-        <Link href="/dashboard" className="text-sm text-neutral-500 underline">
-          Dashboard
-        </Link>
-      </div>
+    <>
+      <AppNav current="applications" />
+    <main className="mx-auto max-w-4xl p-4 md:p-8">
+      <h1 className="mb-6 text-2xl font-semibold">Applications</h1>
 
       {message && (
         <p
@@ -219,7 +217,7 @@ export default async function ApplicationsPage({
                       </div>
                     </form>
 
-                    <div className="flex flex-wrap items-end gap-2 border-t border-neutral-100 pt-4">
+                    <div className="flex flex-col gap-3 border-t border-neutral-100 pt-4 sm:flex-row sm:flex-wrap sm:items-end">
                       <form action={regenerateEmailAction}>
                         <input
                           type="hidden"
@@ -236,7 +234,7 @@ export default async function ApplicationsPage({
 
                       <form
                         action={sendApplicationAction}
-                        className="flex flex-1 items-end gap-2"
+                        className="flex flex-col gap-2 sm:flex-1 sm:flex-row sm:items-end"
                       >
                         <input
                           type="hidden"
@@ -288,7 +286,7 @@ export default async function ApplicationsPage({
                         </p>
                       </div>
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {(NEXT_STATUSES[application.status] ?? []).map((next) => (
                         <form key={next} action={updateApplicationStatusAction}>
                           <input type="hidden" name="id" value={application.id} />
@@ -310,5 +308,6 @@ export default async function ApplicationsPage({
         </ul>
       )}
     </main>
+    </>
   );
 }

@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+::selection {
+  background: #059669;
+  color: #fff;
+}
+
+input,
+textarea,
+select {
+  outline-color: #059669;
+}

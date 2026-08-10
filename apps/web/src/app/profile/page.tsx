@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@jobbiq/db";
 import type { EducationItem, ExperienceItem } from "@jobbiq/core";
 import { auth } from "@/auth";
+import { AppNav } from "@/components/AppNav";
 import { uploadCvAction, saveProfileAction } from "./actions";
 
 // CV parsing calls the OpenAI API and can take a while.
@@ -60,13 +60,10 @@ export default async function ProfilePage({
   const education = (profile?.education ?? []) as unknown as EducationItem[];
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Candidate profile</h1>
-        <Link href="/dashboard" className="text-sm text-neutral-500 underline">
-          Back to dashboard
-        </Link>
-      </div>
+    <>
+      <AppNav current="profile" />
+    <main className="mx-auto max-w-3xl p-4 md:p-8">
+      <h1 className="mb-6 text-2xl font-semibold">Candidate profile</h1>
 
       {message && (
         <p
@@ -87,17 +84,20 @@ export default async function ProfilePage({
             ? `Last upload: ${latestCv.fileName} (${latestCv.createdAt.toLocaleDateString()})${latestCv.parsedAt ? "" : " — not parsed yet"}`
             : "Upload your CV (PDF, DOCX or TXT). We extract your profile from it automatically."}
         </p>
-        <form action={uploadCvAction} className="flex items-center gap-3">
+        <form
+          action={uploadCvAction}
+          className="flex flex-col gap-3 sm:flex-row sm:items-center"
+        >
           <input
             type="file"
             name="cv"
             accept=".pdf,.docx,.txt,.md,application/pdf"
             required
-            className="text-sm"
+            className="min-w-0 flex-1 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-stone-200 file:px-3 file:py-2 file:text-sm file:font-medium"
           />
           <button
             type="submit"
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+            className="rounded-md bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-700"
           >
             Upload & parse
           </button>
@@ -208,6 +208,7 @@ export default async function ProfilePage({
         </section>
       )}
     </main>
+    </>
   );
 }
 

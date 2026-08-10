@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@jobbiq/db";
-import { logoutAction } from "@/app/actions";
+import { AppNav } from "@/components/AppNav";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -20,79 +20,50 @@ export default async function DashboardPage() {
 
   const stats = [
     { label: "Profile", value: profile ? "Ready" : "Missing CV", href: "/profile" },
-    { label: "Search preferences", value: String(preferenceCount), href: "/preferences" },
+    { label: "Preferences", value: String(preferenceCount), href: "/preferences" },
     { label: "New matches", value: String(matchCount), href: "/matches" },
     { label: "Applications", value: String(applicationCount), href: "/applications" },
   ];
 
+  const nextStep = !profile
+    ? { href: "/profile", text: "Start by uploading your CV — we'll extract your profile from it." }
+    : preferenceCount === 0
+      ? { href: "/preferences", text: "Set up a search preference so we can start collecting job postings." }
+      : matchCount === 0
+        ? { href: "/matches", text: "Run matching to score fresh postings against your profile." }
+        : { href: "/matches", text: `You have ${matchCount} new matches waiting for review.` };
+
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
+    <>
+      <AppNav current="dashboard" />
+      <main className="mx-auto max-w-4xl p-4 md:p-8">
+        <div className="mb-6">
           <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-stone-500">
             Signed in as {session.user.email}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <a
-            href="/profile"
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-          >
-            Profile
-          </a>
-          <a
-            href="/preferences"
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-          >
-            Preferences
-          </a>
-          <a
-            href="/jobs"
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-          >
-            Job feed
-          </a>
-          <a
-            href="/matches"
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-          >
-            Matches
-          </a>
-          <a
-            href="/applications"
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-          >
-            Applications
-          </a>
-        <form action={logoutAction}>
-          <button
-            type="submit"
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-          >
-            Sign out
-          </button>
-        </form>
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+          {stats.map((stat) => (
+            <a
+              key={stat.label}
+              href={stat.href}
+              className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm transition-colors hover:border-emerald-600/50"
+            >
+              <p className="text-xs text-stone-500 md:text-sm">{stat.label}</p>
+              <p className="mt-1 text-lg font-semibold md:text-xl">{stat.value}</p>
+            </a>
+          ))}
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {stats.map((stat) => (
-          <a
-            key={stat.label}
-            href={stat.href}
-            className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm hover:border-neutral-400"
-          >
-            <p className="text-sm text-neutral-500">{stat.label}</p>
-            <p className="mt-1 text-xl font-semibold">{stat.value}</p>
-          </a>
-        ))}
-      </div>
-
-      <div className="mt-8 rounded-xl border border-dashed border-neutral-300 p-6 text-sm text-neutral-500">
-        Next up: upload your CV to build your candidate profile (phase 1), then
-        set up search preferences to start collecting job postings (phase 2).
-      </div>
-    </main>
+        <a
+          href={nextStep.href}
+          className="mt-6 block rounded-xl border border-emerald-600/30 bg-emerald-50 p-4 text-sm text-emerald-900 hover:border-emerald-600/60"
+        >
+          <span className="font-semibold">Next step:</span> {nextStep.text}
+        </a>
+      </main>
+    </>
   );
 }
