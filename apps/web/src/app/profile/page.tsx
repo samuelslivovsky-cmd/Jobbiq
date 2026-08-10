@@ -3,6 +3,7 @@ import { prisma } from "@jobbiq/db";
 import type { EducationItem, ExperienceItem } from "@jobbiq/core";
 import { auth } from "@/auth";
 import { AppNav } from "@/components/AppNav";
+import { SubmitButton } from "@/components/SubmitButton";
 import { uploadCvAction, saveProfileAction } from "./actions";
 
 // CV parsing calls the OpenAI API and can take a while.
@@ -95,12 +96,9 @@ export default async function ProfilePage({
             required
             className="min-w-0 flex-1 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-stone-200 file:px-3 file:py-2 file:text-sm file:font-medium"
           />
-          <button
-            type="submit"
-            className="rounded-md bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-700"
-          >
+          <SubmitButton pendingLabel="Uploading & parsing CV…">
             Upload & parse
-          </button>
+          </SubmitButton>
         </form>
       </section>
 
@@ -154,12 +152,7 @@ export default async function ProfilePage({
               rows={3}
               defaultValue={links.map((l) => `${l.label} | ${l.url}`).join("\n")}
             />
-            <button
-              type="submit"
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
-            >
-              Save profile
-            </button>
+            <SubmitButton pendingLabel="Saving…">Save profile</SubmitButton>
           </form>
 
           {experience.length > 0 && (

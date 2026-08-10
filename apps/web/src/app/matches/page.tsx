@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { findMatchesAction, updateMatchStatusAction } from "./actions";
 import { applyToMatchAction } from "@/app/applications/actions";
 import { AppNav } from "@/components/AppNav";
+import { SubmitButton } from "@/components/SubmitButton";
 
 // AI scoring of candidate postings can take a while.
 export const maxDuration = 300;
@@ -83,12 +84,9 @@ export default async function MatchesPage({
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Matches</h1>
         <form action={findMatchesAction}>
-          <button
-            type="submit"
-            className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
-          >
+          <SubmitButton pendingLabel="Scoring matches…">
             Find matches now
-          </button>
+          </SubmitButton>
         </form>
       </div>
 
@@ -176,12 +174,7 @@ export default async function MatchesPage({
                     {(status === "NEW" || status === "SAVED") && (
                       <form action={applyToMatchAction}>
                         <input type="hidden" name="matchId" value={match.id} />
-                        <button
-                          type="submit"
-                          className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700"
-                        >
-                          Apply
-                        </button>
+                        <SubmitButton pendingLabel="Applying…">Apply</SubmitButton>
                       </form>
                     )}
                     {status !== "SAVED" && (
@@ -258,12 +251,9 @@ function StatusButton({
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="status" value={status} />
       <input type="hidden" name="backTo" value={backTo} />
-      <button
-        type="submit"
-        className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-      >
+      <SubmitButton variant="secondary" pendingLabel="…">
         {label}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

@@ -3,6 +3,7 @@ import { prisma, type SearchPreference } from "@jobbiq/db";
 import { connectorRegistry } from "@jobbiq/connectors";
 import { auth } from "@/auth";
 import { AppNav } from "@/components/AppNav";
+import { SubmitButton } from "@/components/SubmitButton";
 import {
   savePreferenceAction,
   deletePreferenceAction,
@@ -88,21 +89,15 @@ export default async function PreferencesPage({
             <div className="flex flex-wrap gap-2">
               <form action={runCrawlNowAction}>
                 <input type="hidden" name="id" value={preference.id} />
-                <button
-                  type="submit"
-                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-                >
+                <SubmitButton variant="secondary" pendingLabel="Crawling…">
                   Run crawl now
-                </button>
+                </SubmitButton>
               </form>
               <form action={deletePreferenceAction}>
                 <input type="hidden" name="id" value={preference.id} />
-                <button
-                  type="submit"
-                  className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                >
+                <SubmitButton variant="danger" pendingLabel="Deleting…">
                   Delete
-                </button>
+                </SubmitButton>
               </form>
             </div>
           </div>
@@ -246,12 +241,9 @@ function PreferenceForm({
           />
           Active (crawled automatically)
         </label>
-        <button
-          type="submit"
-          className="w-full rounded-md bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-700 sm:w-auto"
-        >
+        <SubmitButton pendingLabel="Saving…" className="w-full sm:w-auto">
           {preference ? "Save changes" : "Create preference"}
-        </button>
+        </SubmitButton>
       </div>
     </form>
   );

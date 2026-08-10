@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma, type ApplicationStatus } from "@jobbiq/db";
 import { auth } from "@/auth";
 import { AppNav } from "@/components/AppNav";
+import { SubmitButton } from "@/components/SubmitButton";
 import { isSmtpConfigured } from "@/lib/mailer";
 import {
   regenerateEmailAction,
@@ -208,12 +209,9 @@ export default async function ApplicationsPage({
                         />
                       </div>
                       <div className="flex gap-2">
-                        <button
-                          type="submit"
-                          className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-                        >
+                        <SubmitButton variant="secondary" pendingLabel="Saving…">
                           Save draft
-                        </button>
+                        </SubmitButton>
                       </div>
                     </form>
 
@@ -224,12 +222,9 @@ export default async function ApplicationsPage({
                           name="applicationId"
                           value={application.id}
                         />
-                        <button
-                          type="submit"
-                          className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-100"
-                        >
+                        <SubmitButton variant="secondary" pendingLabel="Generating…">
                           {email ? "Regenerate with AI" : "Generate with AI"}
-                        </button>
+                        </SubmitButton>
                       </form>
 
                       <form
@@ -252,13 +247,12 @@ export default async function ApplicationsPage({
                             className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
                           />
                         </div>
-                        <button
-                          type="submit"
+                        <SubmitButton
                           disabled={!smtpReady || !email}
-                          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                          pendingLabel="Sending…"
                         >
                           Approve & send
-                        </button>
+                        </SubmitButton>
                       </form>
                     </div>
 
@@ -291,12 +285,9 @@ export default async function ApplicationsPage({
                         <form key={next} action={updateApplicationStatusAction}>
                           <input type="hidden" name="id" value={application.id} />
                           <input type="hidden" name="status" value={next} />
-                          <button
-                            type="submit"
-                            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
-                          >
+                          <SubmitButton variant="secondary" pendingLabel="Updating…">
                             Mark {next.toLowerCase()}
-                          </button>
+                          </SubmitButton>
                         </form>
                       ))}
                     </div>

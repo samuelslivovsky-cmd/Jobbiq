@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/SubmitButton";
 import { registerAction } from "@/app/actions";
 
 const ERRORS: Record<string, string> = {
@@ -56,12 +57,9 @@ export default async function RegisterPage({
               className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
             />
           </div>
-          <button
-            type="submit"
-            className="w-full rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-700"
-          >
+          <SubmitButton pendingLabel="Creating account…" className="w-full">
             Create account
-          </button>
+          </SubmitButton>
         </form>
         <p className="mt-4 text-sm text-neutral-500">
           Already registered?{" "}
