@@ -3,7 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@jobbiq/db";
-import { parseCvText } from "@jobbiq/ai";
+import { candidateProfileDataSchema } from "@jobbiq/core";
+import { parseCvText, suggestJobRoles } from "@jobbiq/ai";
+import { connectorRegistry } from "@jobbiq/connectors";
 import { auth } from "@/auth";
 import { extractCvText } from "@/lib/extractText";
 import { storeCvFile } from "@/lib/cvStorage";
@@ -153,4 +155,73 @@ export async function saveProfileAction(formData: FormData) {
 
   revalidatePath("/profile");
   redirect("/profile?saved=1");
+}
+
+export async function suggestRolesAction() {
+  const userId = await requireUserId();
+
+  const profileRow = await prisma.candidateProfile.findUnique({
+    where: { userId },
+  });
+  if (!profileRow) redirect("/profile");
+
+  const profile = candidateProfileDataSchema.parse({
+    fullName: profileRow.fullName,
+    headline: profileRow.headline,
+    summary: profileRow.summary,
+    email: profileRow.email,
+    phone: profileRow.phone,
+    location: profileRow.location,
+    skills: profileRow.skills,
+    experience: profileRow.experience,
+    education: profileRow.education,
+    languages: profileRow.languages,
+    certifications: profileRow.certifications,
+    links: profileRow.links,
+  });
+
+  try {
+    const roles = await suggestJobRoles(profile);
+    await prisma.candidateProfile.update({
+      where: { userId },
+      data: { roleSuggestions: roles },
+    });
+  } catch (error) {
+    console.error("Role suggestion failed:", error);
+    redirect("/profile?error=roles");
+  }
+
+  revalidatePath("/profile");
+  redirect("/profile?roles=1");
+}
+
+export async function createPreferenceFromRoleAction(formData: FormData) {
+  const userId = await requireUserId();
+  const title = String(formData.get("title") ?? "").trim();
+  const keywords = String(formData.get("keywords") ?? "")
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+  if (!title || keywords.length === 0) redirect("/profile");
+
+  const existing = await prisma.searchPreference.findFirst({
+    where: { userId, name: title },
+  });
+  if (!existing) {
+    await prisma.searchPreference.create({
+      data: {
+        userId,
+        name: title,
+        keywords,
+        locations: [],
+        contractTypes: [],
+        seniority: [],
+        excludeCompanies: [],
+        sources: [...connectorRegistry.keys()],
+      },
+    });
+  }
+
+  revalidatePath("/preferences");
+  redirect("/preferences?saved=1");
 }

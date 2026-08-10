@@ -99,6 +99,7 @@ model CandidateProfile {
   languages      Json                         @default("[]")
   certifications Json                         @default("[]")
   links          Json                         @default("[]")
+  roleSuggestions Json                        @default("[]")
   editedByUser   Boolean                      @default(false)
   embedding      Unsupported("vector(1024)")?
   createdAt      DateTime                     @default(now())

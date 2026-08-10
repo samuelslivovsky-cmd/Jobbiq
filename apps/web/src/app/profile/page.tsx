@@ -4,7 +4,12 @@ import type { EducationItem, ExperienceItem } from "@jobbiq/core";
 import { auth } from "@/auth";
 import { AppNav } from "@/components/AppNav";
 import { SubmitButton } from "@/components/SubmitButton";
-import { uploadCvAction, saveProfileAction } from "./actions";
+import {
+  uploadCvAction,
+  saveProfileAction,
+  suggestRolesAction,
+  createPreferenceFromRoleAction,
+} from "./actions";
 
 // CV parsing calls the OpenAI API and can take a while.
 export const maxDuration = 300;
@@ -21,6 +26,11 @@ const MESSAGES: Record<string, { kind: "ok" | "err"; text: string }> = {
     kind: "err",
     text: "The CV was uploaded but AI parsing failed. Check that OPENAI_API_KEY is configured, then upload again.",
   },
+  roles: {
+    kind: "err",
+    text: "Role suggestion failed (is OPENAI_API_KEY configured?). Try again.",
+  },
+  rolesok: { kind: "ok", text: "Role suggestions updated — see below." },
 };
 
 interface LanguageItem {
@@ -31,6 +41,18 @@ interface LinkItem {
   label: string;
   url: string;
 }
+interface RoleSuggestionItem {
+  title: string;
+  reason: string;
+  keywords: string[];
+  fit: "strong" | "good" | "stretch";
+}
+
+const FIT_STYLES: Record<string, string> = {
+  strong: "bg-emerald-100 text-emerald-800",
+  good: "bg-sky-100 text-sky-800",
+  stretch: "bg-amber-100 text-amber-800",
+};
 
 export default async function ProfilePage({
   searchParams,
@@ -42,7 +64,9 @@ export default async function ProfilePage({
   const userId = session.user.id;
 
   const params = await searchParams;
-  const messageKey = params.error ?? (params.parsed ? "parsed" : params.saved ? "saved" : "");
+  const messageKey =
+    params.error ??
+    (params.parsed ? "parsed" : params.saved ? "saved" : params.roles ? "rolesok" : "");
   const message = MESSAGES[messageKey];
 
   const [profile, latestCv] = await Promise.all([
@@ -59,6 +83,8 @@ export default async function ProfilePage({
   const links = (profile?.links ?? []) as unknown as LinkItem[];
   const experience = (profile?.experience ?? []) as unknown as ExperienceItem[];
   const education = (profile?.education ?? []) as unknown as EducationItem[];
+  const roleSuggestions = (profile?.roleSuggestions ??
+    []) as unknown as RoleSuggestionItem[];
 
   return (
     <>
@@ -101,6 +127,76 @@ export default async function ProfilePage({
           </SubmitButton>
         </form>
       </section>
+
+      {profile && (
+        <section className="mb-8 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-medium">Suggested roles</h2>
+            <form action={suggestRolesAction}>
+              <SubmitButton
+                variant={roleSuggestions.length > 0 ? "secondary" : "primary"}
+                pendingLabel="Analyzing your CV…"
+              >
+                {roleSuggestions.length > 0 ? "Refresh suggestions" : "Suggest roles with AI"}
+              </SubmitButton>
+            </form>
+          </div>
+          <p className="mb-4 text-sm text-neutral-500">
+            Roles worth searching for based on your CV. One click creates a
+            search preference.
+          </p>
+          {roleSuggestions.length === 0 ? (
+            <p className="rounded-md border border-dashed border-neutral-300 p-4 text-sm text-neutral-500">
+              No suggestions yet — hit the button above and we&apos;ll analyze
+              your profile.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {roleSuggestions.map((role, index) => (
+                <li
+                  key={index}
+                  className="rounded-lg border border-neutral-200 p-4"
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-medium">
+                        {role.title}{" "}
+                        <span
+                          className={`ml-1 rounded px-1.5 py-0.5 text-xs font-semibold ${FIT_STYLES[role.fit] ?? "bg-neutral-100 text-neutral-600"}`}
+                        >
+                          {role.fit}
+                        </span>
+                      </p>
+                      <p className="mt-1 text-sm text-neutral-600">{role.reason}</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {role.keywords.map((keyword) => (
+                          <span
+                            key={keyword}
+                            className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600"
+                          >
+                            {keyword}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <form action={createPreferenceFromRoleAction} className="shrink-0">
+                      <input type="hidden" name="title" value={role.title} />
+                      <input
+                        type="hidden"
+                        name="keywords"
+                        value={role.keywords.join(", ")}
+                      />
+                      <SubmitButton variant="secondary" pendingLabel="Creating…">
+                        Create preference
+                      </SubmitButton>
+                    </form>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {profile && (
         <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
