@@ -26,6 +26,7 @@ export default async function LoginPage({
             <input
               name="email"
               type="email"
+              autoComplete="email"
               required
               className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
             />
@@ -35,6 +36,7 @@ export default async function LoginPage({
             <input
               name="password"
               type="password"
+              autoComplete="current-password"
               required
               className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
             />
