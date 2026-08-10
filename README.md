@@ -38,6 +38,24 @@ Trigger a crawl manually:
 curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/crawl
 ```
 
+## Local crawling (all sources, incl. scraping)
+
+Scraping connectors (Profesia.sk) don't run on Vercel — run the crawler from
+your own machine instead. Point `DATABASE_URL` in `.env` at your production
+(Neon) database and it feeds the deployed app directly:
+
+```bash
+pnpm install && pnpm build
+pnpm crawl                   # crawl due active preferences
+pnpm crawl --force           # ignore frequency gating
+pnpm crawl --match           # + AI matching afterwards (needs OPENAI_API_KEY)
+pnpm crawl --source=profesia # single connector
+pnpm crawl --max=200         # postings per source (default 100)
+```
+
+Sources: Profesia.sk (scrape), Adzuna*, Jooble*, Remotive, RemoteOK,
+We Work Remotely, Arbeitnow, Jobicy — `*` needs a free API key in `.env`.
+
 ## Deploying to Vercel
 
 1. Import the repo; set **Root Directory** to `apps/web` (install/build commands
