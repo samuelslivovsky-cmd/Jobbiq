@@ -43,6 +43,7 @@ export default async function PreferencesPage({
     key: s.key,
     name: s.name,
     countries: s.countries ?? null,
+    localOnly: !!s.heavy,
   }));
 
   let message: { kind: "ok" | "err"; text: string } | undefined;
@@ -141,7 +142,12 @@ function PreferenceForm({
   sourceOptions,
 }: {
   preference?: SearchPreference;
-  sourceOptions: { key: string; name: string; countries: string[] | null }[];
+  sourceOptions: {
+    key: string;
+    name: string;
+    countries: string[] | null;
+    localOnly: boolean;
+  }[];
 }) {
   const selectedCountries = effectiveCountries(preference?.countries ?? []);
   return (
@@ -245,7 +251,8 @@ function PreferenceForm({
       <div>
         <p className="mb-1 text-sm font-medium">Job sources</p>
         <p className="mb-2 text-xs text-neutral-500">
-          Each source only runs for the selected countries it covers.
+          Each source only runs for the selected countries it covers. Sources
+          marked “local” run only with the local crawler (<code>pnpm crawl</code>).
         </p>
         <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
           {sourceOptions.map((source) => (
@@ -263,6 +270,14 @@ function PreferenceForm({
                 <span className="text-xs uppercase text-neutral-400">
                   {source.countries ? source.countries.join(" ") : "remote/intl"}
                 </span>
+                {source.localOnly && (
+                  <span
+                    className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-500"
+                    title="Runs only with the local crawler (pnpm crawl), not on Vercel"
+                  >
+                    local
+                  </span>
+                )}
               </span>
             </label>
           ))}

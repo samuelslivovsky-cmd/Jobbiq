@@ -11,6 +11,9 @@
  *   pnpm crawl --max=200        # max postings per source and country (default 100)
  *   pnpm crawl --country=sk,cz  # override the preferences' countries
  *   pnpm crawl --list           # list connectors with their countries and exit
+ *
+ * Browser connectors (type "browser": AMS, StepStone.at) need Chromium once:
+ *   pnpm exec playwright install chromium
  */
 import path from "path";
 import { config as loadEnv } from "dotenv";
@@ -20,7 +23,7 @@ loadEnv({ path: path.resolve(__dirname, "../../../.env") });
 loadEnv(); // also honor a local .env / already-exported vars
 
 import { prisma } from "@jobbiq/db";
-import { connectorRegistry, isConnectorConfigured } from "@jobbiq/connectors";
+import { closeBrowser, connectorRegistry, isConnectorConfigured } from "@jobbiq/connectors";
 import { isCountryCode } from "@jobbiq/core";
 import { matchUsersForPreferences } from "@jobbiq/matcher";
 import { crawlPreference, isCrawlDue } from "./crawl";
@@ -148,4 +151,7 @@ main()
     console.error(error);
     process.exitCode = 1;
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await closeBrowser(); // headless Chromium of browser connectors, if started
+    await prisma.$disconnect();
+  });

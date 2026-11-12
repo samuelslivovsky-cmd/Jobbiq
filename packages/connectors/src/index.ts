@@ -25,6 +25,7 @@ import {
   workiConnector,
 } from "./boards";
 import { justjoinConnector, rocketjobsConnector, startupjobsConnector } from "./sitemapBoards";
+import { amsConnector, stepstoneAtConnector } from "./browserBoards";
 
 export * from "./types";
 export * from "./robots";
@@ -48,6 +49,8 @@ export { nofluffjobsConnector, parseNfjState, mapNfjPosting } from "./nofluffjob
 export { bulldogjobConnector, bulldogJobsFromHtml, mapBulldogJob } from "./bulldogjob";
 export * from "./boards";
 export * from "./sitemapBoards";
+export { amsConnector, stepstoneAtConnector, mapAmsJob, browserBoardConnector } from "./browserBoards";
+export { browserFetch, closeBrowser, BotWallError } from "./browser";
 
 /** Registry order = order shown in the UI: per market, then pan-EU, then remote. */
 const all: JobConnector[] = [
@@ -75,6 +78,8 @@ const all: JobConnector[] = [
   arbeitnowConnector,
   // Austria
   karriereAtConnector,
+  amsConnector,
+  stepstoneAtConnector,
   // Pan-European / multi-country
   euresConnector,
   adzunaConnector,

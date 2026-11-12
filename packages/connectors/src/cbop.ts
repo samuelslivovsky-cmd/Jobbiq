@@ -1,6 +1,9 @@
 import type { NormalizedSearchParams, RawJobPosting } from "@jobbiq/core";
 import type { JobConnector } from "./types";
 import { cleanText, fetchJson, looksRemote, matchesKeywords, matchesLocation, memoize, stripHtml } from "./types";
+import { findOfferArray, pickText, type Json } from "./jsonShape";
+
+export { findOfferArray } from "./jsonShape";
 
 /**
  * CBOP — Centralna Baza Ofert Pracy (oferty.praca.gov.pl), the Polish public
@@ -11,37 +14,6 @@ import { cleanText, fetchJson, looksRemote, matchesKeywords, matchesLocation, me
 const BASE = "https://oferty.praca.gov.pl";
 const PAGE_SIZE = 100;
 const SCAN_PAGES = 20;
-
-type Json = Record<string, unknown>;
-
-/** First non-empty string among keys (also reads {nazwa|name|value}). */
-function pickText(obj: Json, ...keys: string[]): string {
-  for (const key of keys) {
-    const value = obj[key];
-    if (typeof value === "string" && value.trim()) return value;
-    if (typeof value === "number") return String(value);
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      const nested = value as Json;
-      const inner = nested.nazwa ?? nested.name ?? nested.value ?? nested.miejscowosc;
-      if (typeof inner === "string" && inner.trim()) return inner;
-    }
-  }
-  return "";
-}
-
-/** The largest array of objects anywhere in the response (shape-tolerant). */
-export function findOfferArray(node: unknown, depth = 0): Json[] {
-  if (Array.isArray(node)) {
-    return node.length && typeof node[0] === "object" ? (node as Json[]) : [];
-  }
-  if (!node || typeof node !== "object" || depth > 5) return [];
-  let best: Json[] = [];
-  for (const value of Object.values(node as Json)) {
-    const found = findOfferArray(value, depth + 1);
-    if (found.length > best.length) best = found;
-  }
-  return best;
-}
 
 export function mapCbopOffer(offer: Json): RawJobPosting | null {
   const id = pickText(offer, "id", "idOferty", "numerOferty");

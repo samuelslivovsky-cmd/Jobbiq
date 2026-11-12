@@ -23,6 +23,10 @@
     "test": {
       "dependsOn": [
         "^build"
+      ],
+      "passThroughEnv": [
+        "PLAYWRIGHT_BROWSERS_PATH",
+        "JOBBIQ_CHROMIUM_PATH"
       ]
     }
   }

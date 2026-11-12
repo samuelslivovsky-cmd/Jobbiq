@@ -70,12 +70,23 @@ export async function isAllowedByRobots(url: string): Promise<boolean> {
   return !("unavailable" in rules) && isPathAllowed(rules, robotsPath(url));
 }
 
+/**
+ * Throws RobotsDisallowedError unless robots.txt lets our bot fetch `url`.
+ * Returns the request interval to use for its host (raised to Crawl-delay).
+ */
+export async function assertAllowedByRobots(url: string, minIntervalMs: number): Promise<number> {
+  const rules = await robotsFor(url);
+  if ("unavailable" in rules) throw new RobotsDisallowedError(url, rules.unavailable);
+  if (!isPathAllowed(rules, robotsPath(url))) throw new RobotsDisallowedError(url);
+  return rules.crawlDelaySec ? Math.max(minIntervalMs, rules.crawlDelaySec * 1000) : minIntervalMs;
+}
+
 // ---------- per-host politeness ----------
 
 const nextSlot = new Map<string, number>();
 
 /** Space requests to one host at least `minIntervalMs` apart (plus jitter). */
-async function waitForHost(host: string, minIntervalMs: number): Promise<void> {
+export async function waitForHost(host: string, minIntervalMs: number): Promise<void> {
   const now = Date.now();
   const slot = Math.max(now, nextSlot.get(host) ?? 0);
   const jitter = Math.floor(Math.random() * minIntervalMs * 0.3);
@@ -111,10 +122,7 @@ export async function politeFetch(url: string, options: PoliteFetchOptions = {})
 
   let interval = minIntervalMs;
   if (checkRobots) {
-    const rules = await robotsFor(url);
-    if ("unavailable" in rules) throw new RobotsDisallowedError(url, rules.unavailable);
-    if (!isPathAllowed(rules, robotsPath(url))) throw new RobotsDisallowedError(url);
-    if (rules.crawlDelaySec) interval = Math.max(interval, rules.crawlDelaySec * 1000);
+    interval = await assertAllowedByRobots(url, interval);
   }
 
   const host = new URL(url).host;

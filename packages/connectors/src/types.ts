@@ -4,7 +4,8 @@ export interface JobConnector {
   /** Stable identifier, e.g. "adzuna", "profesia". */
   key: string;
   name: string;
-  type: "api" | "scrape";
+  /** "browser" = needs a real (headless) Chromium via Playwright; local only. */
+  type: "api" | "scrape" | "browser";
   /** Env vars the connector needs; used to decide whether it can run. */
   requiredEnv: string[];
   /**
@@ -32,7 +33,19 @@ export function canRunHere(connector: JobConnector): boolean {
   return !(connector.heavy && process.env.VERCEL);
 }
 
-export { fetchJson, fetchText, politeFetch, sleep, isAllowedByRobots, RobotsDisallowedError, HttpError, USER_AGENT } from "./http";
+export {
+  fetchJson,
+  fetchText,
+  politeFetch,
+  sleep,
+  isAllowedByRobots,
+  assertAllowedByRobots,
+  waitForHost,
+  RobotsDisallowedError,
+  HttpError,
+  USER_AGENT,
+  BOT_TOKEN,
+} from "./http";
 
 /** Case-insensitive: does the text mention at least one keyword? */
 export function matchesKeywords(text: string, keywords: string[]): boolean {

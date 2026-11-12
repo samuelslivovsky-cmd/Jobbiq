@@ -70,11 +70,12 @@ only; unknown places go to every country).
 | 🇭🇺 HU | Profession.hu, No Fluff Jobs |
 | 🇵🇱 PL | CBOP (praca.gov.pl, state), JustJoin.it\*, RocketJobs.pl\*, Bulldogjob.pl, No Fluff Jobs |
 | 🇩🇪 DE | Bundesagentur für Arbeit (Jobsuche API), Arbeitnow |
-| 🇦🇹 AT | karriere.at |
+| 🇦🇹 AT | karriere.at, AMS alle jobs‡, StepStone.at‡ |
 | all six | EURES (EU public employment services, incl. AMS), Jooble†, Careerjet† (+ Adzuna† for DE/AT/PL) |
 | remote | Remotive, RemoteOK, We Work Remotely, Jobicy |
 
-\* local crawler only (bulk download or one request per ad) · † free API key in `.env`
+\* local crawler only (bulk download or one request per ad) · † free API key in `.env` ·
+‡ headless browser (Playwright), local crawler only
 
 ### Crawling rules
 
@@ -87,15 +88,21 @@ All HTTP goes through `packages/connectors/src/http.ts`:
 - Honest user agent `JobbiqBot/0.2`, per-host rate limit with jitter
   (1–3 s depending on the site), retries with backoff on 429/5xx
   (`Retry-After` honoured), timeouts.
+- The browser connectors follow the same rules: robots.txt is checked for
+  every page they open, JSON the page loads in the background is only used
+  if robots.txt allows that URL too, the UA is `HeadlessChrome … JobbiqBot`,
+  and a bot wall (403/429 or a challenge page) ends the run — no stealth
+  plugins, proxies or CAPTCHA solving.
 - Where a site's API or search is robots-disallowed we use what *is* allowed:
   JustJoin.it / RocketJobs / StartupJobs via their sitemaps + offer pages,
   No Fluff Jobs via server-rendered pages, Kariera.sk via listing pages
   (its `?q=` search is disallowed).
 
 Deliberately **not** supported — they block bots (Cloudflare / Akamai /
-DataDome / signed requests) or forbid it: Pracuj.pl, theprotocol.it, OLX,
-StepStone, Indeed, LinkedIn, XING, Monster, AMS alle jobs (covered via
-EURES), praca.sme.sk.
+DataDome) or forbid it in their terms: Pracuj.pl, theprotocol.it, OLX,
+StepStone.de, Indeed, LinkedIn, XING, Monster, praca.sme.sk. A headless
+browser doesn't change that — they detect it, and getting past them would
+mean evading the block.
 
 HTML parsers are keyed on detail-link URL patterns (which carry the ad ID)
 rather than CSS classes, so they survive most redesigns. Offline tests:
