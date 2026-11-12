@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 import { prisma, type SearchPreference } from "@jobbiq/db";
 import { connectorRegistry } from "@jobbiq/connectors";
+import {
+  COUNTRY_LABELS,
+  SUPPORTED_COUNTRIES,
+  effectiveCountries,
+} from "@jobbiq/core";
 import { auth } from "@/auth";
 import { AppNav } from "@/components/AppNav";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -34,7 +39,11 @@ export default async function PreferencesPage({
     where: { userId },
     orderBy: { createdAt: "asc" },
   });
-  const sources = [...connectorRegistry.values()];
+  const sourceOptions = [...connectorRegistry.values()].map((s) => ({
+    key: s.key,
+    name: s.name,
+    countries: s.countries ?? null,
+  }));
 
   let message: { kind: "ok" | "err"; text: string } | undefined;
   if (params.saved) message = { kind: "ok", text: "Preference saved." };
@@ -48,6 +57,8 @@ export default async function PreferencesPage({
     message = { kind: "err", text: "Name and at least one keyword are required." };
   else if (params.error === "nosource")
     message = { kind: "err", text: "Select at least one job source." };
+  else if (params.error === "nocountry")
+    message = { kind: "err", text: "Select at least one country." };
   else if (params.error === "crawl")
     message = {
       kind: "err",
@@ -109,7 +120,7 @@ export default async function PreferencesPage({
           </p>
           <PreferenceForm
             preference={preference}
-            sourceOptions={sources.map((s) => ({ key: s.key, name: s.name }))}
+            sourceOptions={sourceOptions}
           />
         </section>
       ))}
@@ -117,7 +128,7 @@ export default async function PreferencesPage({
       <section className="rounded-xl border border-dashed border-neutral-300 bg-white p-6">
         <h2 className="mb-4 text-lg font-medium">New preference</h2>
         <PreferenceForm
-          sourceOptions={sources.map((s) => ({ key: s.key, name: s.name }))}
+          sourceOptions={sourceOptions}
         />
       </section>
     </main>
@@ -130,8 +141,9 @@ function PreferenceForm({
   sourceOptions,
 }: {
   preference?: SearchPreference;
-  sourceOptions: { key: string; name: string }[];
+  sourceOptions: { key: string; name: string; countries: string[] | null }[];
 }) {
+  const selectedCountries = effectiveCountries(preference?.countries ?? []);
   return (
     <form action={savePreferenceAction} className="space-y-4">
       {preference && <input type="hidden" name="id" value={preference.id} />}
@@ -214,8 +226,28 @@ function PreferenceForm({
       </div>
 
       <div>
-        <p className="mb-1 text-sm font-medium">Job sources</p>
+        <p className="mb-1 text-sm font-medium">Countries</p>
         <div className="flex flex-wrap gap-4">
+          {SUPPORTED_COUNTRIES.map((country) => (
+            <label key={country} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="countries"
+                value={country}
+                defaultChecked={selectedCountries.includes(country)}
+              />
+              {COUNTRY_LABELS[country]}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-1 text-sm font-medium">Job sources</p>
+        <p className="mb-2 text-xs text-neutral-500">
+          Each source only runs for the selected countries it covers.
+        </p>
+        <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
           {sourceOptions.map((source) => (
             <label key={source.key} className="flex items-center gap-2 text-sm">
               <input
@@ -226,7 +258,12 @@ function PreferenceForm({
                   preference ? preference.sources.includes(source.key) : true
                 }
               />
-              {source.name}
+              <span>
+                {source.name}{" "}
+                <span className="text-xs uppercase text-neutral-400">
+                  {source.countries ? source.countries.join(" ") : "remote/intl"}
+                </span>
+              </span>
             </label>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { prisma } from "@jobbiq/db";
+import { prisma, type Prisma } from "@jobbiq/db";
+import { COUNTRY_LABELS, SUPPORTED_COUNTRIES, isCountryCode } from "@jobbiq/core";
 import { auth } from "@/auth";
 import { AppNav } from "@/components/AppNav";
 
@@ -13,23 +14,26 @@ const REMOTE_LABELS: Record<string, string> = {
 export default async function JobsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; country?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const { q } = await searchParams;
+  const { q, country: countryParam } = await searchParams;
+  const country = countryParam && isCountryCode(countryParam) ? countryParam : undefined;
+
+  const where: Prisma.JobPostingWhereInput = {};
+  if (q) {
+    where.OR = [
+      { title: { contains: q, mode: "insensitive" } },
+      { company: { contains: q, mode: "insensitive" } },
+      { description: { contains: q, mode: "insensitive" } },
+    ];
+  }
+  if (country) where.country = country;
 
   const jobs = await prisma.jobPosting.findMany({
-    where: q
-      ? {
-          OR: [
-            { title: { contains: q, mode: "insensitive" } },
-            { company: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
+    where,
     take: 100,
     orderBy: [{ postedAt: { sort: "desc", nulls: "last" } }, { fetchedAt: "desc" }],
     select: {
@@ -37,6 +41,7 @@ export default async function JobsPage({
       title: true,
       company: true,
       location: true,
+      country: true,
       remoteType: true,
       salaryText: true,
       url: true,
@@ -58,6 +63,19 @@ export default async function JobsPage({
           placeholder="Search title, company or description…"
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
         />
+        <select
+          name="country"
+          defaultValue={country ?? ""}
+          aria-label="Country"
+          className="rounded-md border border-neutral-300 px-2 py-2 text-sm"
+        >
+          <option value="">All countries</option>
+          {SUPPORTED_COUNTRIES.map((code) => (
+            <option key={code} value={code}>
+              {COUNTRY_LABELS[code]}
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
           className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
@@ -94,6 +112,7 @@ export default async function JobsPage({
                   <p className="text-sm text-neutral-500">
                     {job.company}
                     {job.location ? ` · ${job.location}` : ""}
+                    {job.country ? ` · ${job.country.toUpperCase()}` : ""}
                     {job.remoteType ? ` · ${REMOTE_LABELS[job.remoteType]}` : ""}
                   </p>
                   {job.salaryText && (

@@ -26,8 +26,11 @@ export const arbeitnowConnector: JobConnector = {
   name: "Arbeitnow",
   type: "api",
   requiredEnv: [],
+  countries: ["de"],
+  homepage: "https://www.arbeitnow.com/",
 
   async *search(params: NormalizedSearchParams): AsyncIterable<RawJobPosting> {
+    if (params.country && params.country !== "de") return;
     let fetched = 0;
     let url: string | null = "https://www.arbeitnow.com/api/job-board-api";
 

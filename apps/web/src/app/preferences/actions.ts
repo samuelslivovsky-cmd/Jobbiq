@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma, type CrawlFrequency, type RemoteType } from "@jobbiq/db";
-import { crawlPreferenceSource } from "@jobbiq/crawler";
+import { crawlPreference } from "@jobbiq/crawler";
 import { connectorRegistry } from "@jobbiq/connectors";
+import { isCountryCode } from "@jobbiq/core";
 import { auth } from "@/auth";
 
 async function requireUserId(): Promise<string> {
@@ -49,6 +50,14 @@ export async function savePreferenceAction(formData: FormData) {
     redirect("/preferences?error=nosource");
   }
 
+  const countries = formData
+    .getAll("countries")
+    .map((value) => String(value).toLowerCase())
+    .filter(isCountryCode);
+  if (countries.length === 0) {
+    redirect("/preferences?error=nocountry");
+  }
+
   const salaryMinRaw = Number(formData.get("salaryMin"));
   const salaryMin =
     Number.isFinite(salaryMinRaw) && salaryMinRaw > 0
@@ -65,6 +74,7 @@ export async function savePreferenceAction(formData: FormData) {
     remoteType,
     frequency,
     sources,
+    countries,
     salaryMin,
     currency: salaryMin ? String(formData.get("currency") ?? "EUR") : null,
     active: formData.get("active") === "on",
@@ -102,21 +112,11 @@ export async function runCrawlNowAction(formData: FormData) {
     redirect("/preferences?error=notfound");
   }
 
-  let fetched = 0;
-  const errors: string[] = [];
-  for (const sourceKey of preference.sources) {
-    try {
-      const result = await crawlPreferenceSource(preference, sourceKey, {
-        maxResults: 50,
-      });
-      fetched += result.fetched;
-      if (result.skipped) errors.push(`${sourceKey}: ${result.skipped}`);
-    } catch (error) {
-      errors.push(
-        `${sourceKey}: ${error instanceof Error ? error.message : "failed"}`,
-      );
-    }
-  }
+  const results = await crawlPreference(preference, { maxResults: 50 });
+  const fetched = results.reduce((sum, r) => sum + r.fetched, 0);
+  const errors = results
+    .filter((r) => r.failed)
+    .map((r) => `${r.sourceKey}: ${r.failed}`);
 
   await prisma.searchPreference.update({
     where: { id: preference.id },

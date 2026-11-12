@@ -8,7 +8,8 @@
     "typecheck": "turbo run typecheck",
     "db:generate": "pnpm --filter @jobbiq/db generate",
     "db:migrate": "pnpm --filter @jobbiq/db migrate:dev",
-    "crawl": "pnpm --filter @jobbiq/crawler crawl"
+    "crawl": "pnpm --filter @jobbiq/crawler crawl",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "turbo": "^2.5.0",

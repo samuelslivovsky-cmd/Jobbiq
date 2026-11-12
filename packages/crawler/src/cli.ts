@@ -8,7 +8,9 @@
  *   pnpm crawl --force          # ignore frequency gating, crawl everything
  *   pnpm crawl --match          # run AI matching afterwards (needs OPENAI_API_KEY)
  *   pnpm crawl --source=profesia  # only one connector
- *   pnpm crawl --max=200        # max postings per source (default 100)
+ *   pnpm crawl --max=200        # max postings per source and country (default 100)
+ *   pnpm crawl --country=sk,cz  # override the preferences' countries
+ *   pnpm crawl --list           # list connectors with their countries and exit
  */
 import path from "path";
 import { config as loadEnv } from "dotenv";
@@ -19,23 +21,30 @@ loadEnv(); // also honor a local .env / already-exported vars
 
 import { prisma } from "@jobbiq/db";
 import { connectorRegistry, isConnectorConfigured } from "@jobbiq/connectors";
+import { isCountryCode } from "@jobbiq/core";
 import { matchUsersForPreferences } from "@jobbiq/matcher";
-import { crawlPreferenceSource, isCrawlDue } from "./crawl";
+import { crawlPreference, isCrawlDue } from "./crawl";
 
 interface Args {
   force: boolean;
   match: boolean;
   source?: string;
+  countries?: string[];
+  list: boolean;
   max: number;
 }
 
 function parseArgs(argv: string[]): Args {
-  const args: Args = { force: false, match: false, max: 100 };
+  const args: Args = { force: false, match: false, list: false, max: 100 };
   for (const arg of argv) {
     if (arg === "--force") args.force = true;
     else if (arg === "--match") args.match = true;
     else if (arg.startsWith("--source=")) args.source = arg.slice(9);
     else if (arg.startsWith("--max=")) args.max = Number(arg.slice(6)) || 100;
+    else if (arg === "--list") args.list = true;
+    else if (arg.startsWith("--country=")) {
+      args.countries = arg.slice(10).toLowerCase().split(",").filter(Boolean);
+    }
   }
   return args;
 }
@@ -50,13 +59,23 @@ async function main() {
     process.exit(1);
   }
 
+  const invalidCountry = args.countries?.find((c) => !isCountryCode(c));
+  if (invalidCountry) {
+    console.error(`Unknown country "${invalidCountry}". Use: sk, cz, hu, pl, de, at`);
+    process.exit(1);
+  }
+
   console.log("Connectors:");
   for (const connector of connectorRegistry.values()) {
     const status = isConnectorConfigured(connector)
       ? "ready"
       : `missing env: ${connector.requiredEnv.join(", ")}`;
-    console.log(`  ${connector.key.padEnd(16)} ${connector.type.padEnd(7)} ${status}`);
+    const countries = connector.countries?.join(",") ?? "intl/remote";
+    console.log(
+      `  ${connector.key.padEnd(18)} ${connector.type.padEnd(7)} ${countries.padEnd(18)} ${status}`,
+    );
   }
+  if (args.list) return;
 
   const preferences = await prisma.searchPreference.findMany({
     where: { active: true },
@@ -80,23 +99,27 @@ async function main() {
       ? [args.source]
       : preference.sources.filter((key) => connectorRegistry.has(key));
 
-    for (const sourceKey of sources) {
-      const startedAt = Date.now();
-      try {
-        const result = await crawlPreferenceSource(preference, sourceKey, {
-          maxResults: args.max,
-        });
-        const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
-        if (result.skipped) {
-          console.log(`  ${sourceKey.padEnd(16)} skipped: ${result.skipped}`);
-        } else {
-          console.log(`  ${sourceKey.padEnd(16)} ${result.fetched} postings (${seconds}s)`);
-          totalFetched += result.fetched;
-        }
-      } catch (error) {
-        console.log(
-          `  ${sourceKey.padEnd(16)} FAILED: ${error instanceof Error ? error.message : error}`,
-        );
+    const effective = args.countries
+      ? { ...preference, countries: args.countries }
+      : preference;
+
+    const results = await crawlPreference(effective, {
+      maxResults: args.max,
+      sources,
+    });
+    for (const result of results) {
+      const name = result.sourceKey.padEnd(20);
+      const seconds = ((result.durationMs ?? 0) / 1000).toFixed(1);
+      if (result.failed) {
+        console.log(`  ${name} FAILED (${seconds}s): ${result.failed}`);
+      } else if (result.skipped) {
+        console.log(`  ${name} skipped: ${result.skipped}`);
+      } else {
+        console.log(`  ${name} ${result.fetched} postings (${seconds}s)`);
+        totalFetched += result.fetched;
+      }
+      for (const error of result.errors ?? []) {
+        console.log(`  ${"".padEnd(20)} ! ${error}`);
       }
     }
 

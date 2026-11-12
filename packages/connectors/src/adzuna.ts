@@ -25,6 +25,9 @@ export const adzunaConnector: JobConnector = {
   name: "Adzuna",
   type: "api",
   requiredEnv: ["ADZUNA_APP_ID", "ADZUNA_APP_KEY"],
+  // Adzuna has no SK / CZ / HU index.
+  countries: ["de", "at", "pl"],
+  homepage: "https://www.adzuna.de/",
 
   async *search(params: NormalizedSearchParams): AsyncIterable<RawJobPosting> {
     const appId = process.env.ADZUNA_APP_ID;
@@ -33,7 +36,7 @@ export const adzunaConnector: JobConnector = {
       throw new Error("Adzuna connector requires ADZUNA_APP_ID and ADZUNA_APP_KEY");
     }
 
-    const country = params.country ?? "gb";
+    const country = params.country ?? "de";
     let fetched = 0;
     const maxPages = Math.ceil(params.maxResults / PAGE_SIZE);
 
@@ -54,7 +57,7 @@ export const adzunaConnector: JobConnector = {
 
       const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/${page}?${query}`;
       const data = await fetchJson<AdzunaResponse>(url);
-      if (data.results.length === 0) return;
+      if (!data.results?.length) return;
 
       for (const job of data.results) {
         yield {
@@ -73,6 +76,7 @@ export const adzunaConnector: JobConnector = {
           applyEmail: null,
           applyUrl: job.redirect_url,
           postedAt: job.created ? new Date(job.created) : null,
+          country,
         };
         fetched++;
         if (fetched >= params.maxResults) return;

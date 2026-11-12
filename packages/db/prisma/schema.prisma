@@ -136,6 +136,8 @@ model SearchPreference {
   salaryMin        Int?
   currency         String?
   sources          String[]
+  /// ISO country codes (sk, cz, hu, pl, de, at); empty = all supported markets
+  countries        String[]       @default([])
   excludeCompanies String[]
   frequency        CrawlFrequency @default(DAILY)
   active           Boolean        @default(true)
@@ -174,6 +176,8 @@ model JobPosting {
   title       String
   company     String
   location    String?
+  /// ISO country code (lowercase) of the job, when known
+  country     String?
   remoteType  RemoteType?
   salaryText  String?
   description String
@@ -191,6 +195,7 @@ model JobPosting {
   @@unique([sourceId, externalId])
   @@index([contentHash])
   @@index([fetchedAt])
+  @@index([country])
 }
 
 // ---------- Matching ----------

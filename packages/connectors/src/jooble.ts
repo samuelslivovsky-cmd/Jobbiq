@@ -18,12 +18,23 @@ interface JoobleResponse {
   jobs: JoobleJob[];
 }
 
+const COUNTRY_NAMES: Record<string, string> = {
+  sk: "Slovakia",
+  cz: "Czech Republic",
+  hu: "Hungary",
+  pl: "Poland",
+  de: "Germany",
+  at: "Austria",
+};
+
 /** Jooble aggregator — free API key at https://jooble.org/api/about */
 export const joobleConnector: JobConnector = {
   key: "jooble",
   name: "Jooble",
   type: "api",
   requiredEnv: ["JOOBLE_API_KEY"],
+  countries: ["sk", "cz", "hu", "pl", "de", "at"],
+  homepage: "https://jooble.org/",
 
   async *search(params: NormalizedSearchParams): AsyncIterable<RawJobPosting> {
     const apiKey = process.env.JOOBLE_API_KEY;
@@ -38,7 +49,8 @@ export const joobleConnector: JobConnector = {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             keywords: params.keywords.join(" "),
-            location: params.locations[0] ?? "",
+            location:
+              params.locations[0] ?? (params.country ? COUNTRY_NAMES[params.country] : ""),
             page,
           }),
         },
@@ -59,6 +71,7 @@ export const joobleConnector: JobConnector = {
           applyEmail: null,
           applyUrl: job.link,
           postedAt: job.updated ? new Date(job.updated) : null,
+          country: params.country,
         };
         fetched++;
         if (fetched >= params.maxResults) return;

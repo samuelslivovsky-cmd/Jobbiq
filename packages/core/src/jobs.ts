@@ -29,6 +29,8 @@ export const rawJobPostingSchema = z.object({
   applyEmail: z.string().nullable(),
   applyUrl: z.string().nullable(),
   postedAt: z.coerce.date().nullable(),
+  /** Country of the job (ISO alpha-2, lowercase) when the source knows it. */
+  country: z.string().length(2).nullable().optional(),
 });
 export type RawJobPosting = z.infer<typeof rawJobPostingSchema>;
 
